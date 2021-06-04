@@ -1,3 +1,5 @@
+.git/
+.idea/
 data/
 dataset/
 */__pycache__/*
