@@ -39,7 +39,7 @@ class SGL(AbstractRecommender):
         self.n_layers = conf['n_layers']
         self.adj_type = conf['adj_type']
         self.stop_cnt = conf["stop_cnt"]
-        
+
         self.aug_type = conf["aug_type"]
         self.ssl_mode = conf["ssl_mode"]
         self.ssl_ratio = conf["ssl_ratio"]
@@ -52,7 +52,7 @@ class SGL(AbstractRecommender):
         self.all_users = list(self.user_pos_train.keys())
 
         self.training_user, self.training_item = self._get_training_data()
-        self.norm_adj = self.create_adj_mat(is_subgraph=False)      # norm_adj sparse matrix of whole training graph
+        self.norm_adj = self.create_adj_mat(is_subgraph=False)  # norm_adj sparse matrix of whole training graph
         self.best_result = np.zeros([5], dtype=float)
         self.best_epoch = 0
         self.sess = sess
@@ -72,9 +72,10 @@ class SGL(AbstractRecommender):
             self.epochs = 0
         self.save_flag = conf["save_flag"]
         if self.pretrain or self.save_flag:
-            self.tmp_model_folder = conf["proj_path"] + 'model_tmp/%s/%s/%s/' % (self.dataset_name, self.model_name, self.model_str)
+            self.tmp_model_folder = conf["proj_path"] + 'model_tmp/%s/%s/%s/' % (
+                self.dataset_name, self.model_name, self.model_str)
             self.save_folder = conf["proj_path"] + 'dataset/pretrain-embeddings-%s/%s/n_layers=%d/' % (
-                self.dataset_name, 
+                self.dataset_name,
                 self.model_name,
                 self.n_layers)
             tool.ensureDir(self.tmp_model_folder)
@@ -99,23 +100,25 @@ class SGL(AbstractRecommender):
                 diag_indicator_user = sp.diags(indicator_user)
                 diag_indicator_item = sp.diags(indicator_item)
                 R = sp.csr_matrix(
-                    (np.ones_like(self.training_user, dtype=np.float32), (self.training_user, self.training_item)), 
+                    (np.ones_like(self.training_user, dtype=np.float32), (self.training_user, self.training_item)),
                     shape=(self.n_users, self.n_items))
                 R_prime = diag_indicator_user.dot(R).dot(diag_indicator_item)
                 (user_np_keep, item_np_keep) = R_prime.nonzero()
                 ratings_keep = R_prime.data
-                tmp_adj = sp.csr_matrix((ratings_keep, (user_np_keep, item_np_keep+self.n_users)), shape=(n_nodes, n_nodes))
+                tmp_adj = sp.csr_matrix((ratings_keep, (user_np_keep, item_np_keep + self.n_users)),
+                                        shape=(n_nodes, n_nodes))
             if aug_type in [1, 2]:
-                keep_idx = randint_choice(len(self.training_user), size=int(len(self.training_user) * (1 - self.ssl_ratio)), replace=False)
+                keep_idx = randint_choice(len(self.training_user),
+                                          size=int(len(self.training_user) * (1 - self.ssl_ratio)), replace=False)
                 user_np = np.array(self.training_user)[keep_idx]
                 item_np = np.array(self.training_item)[keep_idx]
                 ratings = np.ones_like(user_np, dtype=np.float32)
-                tmp_adj = sp.csr_matrix((ratings, (user_np, item_np+self.n_users)), shape=(n_nodes, n_nodes))
+                tmp_adj = sp.csr_matrix((ratings, (user_np, item_np + self.n_users)), shape=(n_nodes, n_nodes))
         else:
             user_np = np.array(self.training_user)
             item_np = np.array(self.training_item)
             ratings = np.ones_like(user_np, dtype=np.float32)
-            tmp_adj = sp.csr_matrix((ratings, (user_np, item_np+self.n_users)), shape=(n_nodes, n_nodes))
+            tmp_adj = sp.csr_matrix((ratings, (user_np, item_np + self.n_users)), shape=(n_nodes, n_nodes))
         adj_mat = tmp_adj + tmp_adj.T
 
         # pre adjcency matrix
@@ -128,7 +131,7 @@ class SGL(AbstractRecommender):
         # print('use the pre adjcency matrix')
 
         return adj_matrix
-    
+
     def _create_variable(self):
         with tf.name_scope("input_data"):
             self.users = tf.placeholder(tf.int32, shape=(None,))
@@ -140,7 +143,7 @@ class SGL(AbstractRecommender):
                 self.sub_mat['adj_values_sub1'] = tf.placeholder(tf.float32)
                 self.sub_mat['adj_indices_sub1'] = tf.placeholder(tf.int64)
                 self.sub_mat['adj_shape_sub1'] = tf.placeholder(tf.int64)
-                
+
                 self.sub_mat['adj_values_sub2'] = tf.placeholder(tf.float32)
                 self.sub_mat['adj_indices_sub2'] = tf.placeholder(tf.int64)
                 self.sub_mat['adj_shape_sub2'] = tf.placeholder(tf.int64)
@@ -160,13 +163,17 @@ class SGL(AbstractRecommender):
             if self.pretrain:
                 pretrain_user_embedding = np.load(self.save_folder + 'user_embeddings.npy')
                 pretrain_item_embedding = np.load(self.save_folder + 'item_embeddings.npy')
-                self.weights['user_embedding'] = tf.Variable(pretrain_user_embedding, 
-                                                             name='user_embedding', dtype=tf.float32)  # (users, embedding_size)
+                self.weights['user_embedding'] = tf.Variable(pretrain_user_embedding,
+                                                             name='user_embedding',
+                                                             dtype=tf.float32)  # (users, embedding_size)
                 self.weights['item_embedding'] = tf.Variable(pretrain_item_embedding,
-                                                             name='item_embedding', dtype=tf.float32)  # (items, embedding_size)
+                                                             name='item_embedding',
+                                                             dtype=tf.float32)  # (items, embedding_size)
             else:
-                self.weights['user_embedding'] = tf.Variable(initializer([self.n_users, self.embedding_size]), name='user_embedding')
-                self.weights['item_embedding'] = tf.Variable(initializer([self.n_items, self.embedding_size]), name='item_embedding')
+                self.weights['user_embedding'] = tf.Variable(initializer([self.n_users, self.embedding_size]),
+                                                             name='user_embedding')
+                self.weights['item_embedding'] = tf.Variable(initializer([self.n_items, self.embedding_size]),
+                                                             name='item_embedding')
 
     def build_graph(self):
         self._create_variable()
@@ -201,21 +208,21 @@ class SGL(AbstractRecommender):
         for k in range(1, self.n_layers + 1):
             if self.aug_type in [0, 1]:
                 self.sub_mat['sub_mat_1%d' % k] = tf.SparseTensor(
-                    self.sub_mat['adj_indices_sub1'], 
-                    self.sub_mat['adj_values_sub1'], 
+                    self.sub_mat['adj_indices_sub1'],
+                    self.sub_mat['adj_values_sub1'],
                     self.sub_mat['adj_shape_sub1'])
                 self.sub_mat['sub_mat_2%d' % k] = tf.SparseTensor(
-                    self.sub_mat['adj_indices_sub2'], 
-                    self.sub_mat['adj_values_sub2'], 
+                    self.sub_mat['adj_indices_sub2'],
+                    self.sub_mat['adj_values_sub2'],
                     self.sub_mat['adj_shape_sub2'])
             else:
                 self.sub_mat['sub_mat_1%d' % k] = tf.SparseTensor(
-                    self.sub_mat['adj_indices_sub1%d' % k], 
-                    self.sub_mat['adj_values_sub1%d' % k], 
+                    self.sub_mat['adj_indices_sub1%d' % k],
+                    self.sub_mat['adj_values_sub1%d' % k],
                     self.sub_mat['adj_shape_sub1%d' % k])
                 self.sub_mat['sub_mat_2%d' % k] = tf.SparseTensor(
-                    self.sub_mat['adj_indices_sub2%d' % k], 
-                    self.sub_mat['adj_values_sub2%d' % k], 
+                    self.sub_mat['adj_indices_sub2%d' % k],
+                    self.sub_mat['adj_values_sub2%d' % k],
                     self.sub_mat['adj_shape_sub2%d' % k])
         adj_mat = self._convert_sp_mat_to_sp_tensor(self.norm_adj)
 
@@ -231,7 +238,7 @@ class SGL(AbstractRecommender):
             all_embeddings += [ego_embeddings]
 
             ego_embeddings_sub1 = tf.sparse_tensor_dense_matmul(
-                self.sub_mat['sub_mat_1%d' % k], 
+                self.sub_mat['sub_mat_1%d' % k],
                 ego_embeddings_sub1, name="sparse_dense_sub1%d" % k)
             # ego_embeddings_sub1 = tf.multiply(ego_embeddings_sub1, self.mask1)
             all_embeddings_sub1 += [ego_embeddings_sub1]
@@ -265,7 +272,7 @@ class SGL(AbstractRecommender):
         user_emb2 = tf.nn.embedding_lookup(self.ua_embeddings_sub2, self.users)
         normalize_user_emb1 = tf.nn.l2_normalize(user_emb1, 1)
         normalize_user_emb2 = tf.nn.l2_normalize(user_emb2, 1)
-        
+
         # batch_items, _ = tf.unique(self.pos_items)
         item_emb1 = tf.nn.embedding_lookup(self.ia_embeddings_sub1, self.pos_items)
         item_emb2 = tf.nn.embedding_lookup(self.ia_embeddings_sub2, self.pos_items)
@@ -279,7 +286,7 @@ class SGL(AbstractRecommender):
         ttl_score_user = tf.matmul(normalize_user_emb1, normalize_user_emb2_neg, transpose_a=False, transpose_b=True)
 
         pos_score_item = tf.reduce_sum(tf.multiply(normalize_item_emb1, normalize_item_emb2), axis=1)
-        ttl_score_item = tf.matmul(normalize_item_emb1, normalize_item_emb2_neg, transpose_a=False, transpose_b=True)      
+        ttl_score_item = tf.matmul(normalize_item_emb1, normalize_item_emb2_neg, transpose_a=False, transpose_b=True)
 
         pos_score_user = tf.exp(pos_score_user / self.ssl_temp)
         ttl_score_user = tf.reduce_sum(tf.exp(ttl_score_user / self.ssl_temp), axis=1)
@@ -304,13 +311,17 @@ class SGL(AbstractRecommender):
             normalize_user_emb2 = tf.nn.l2_normalize(user_emb2, 1)
             normalize_all_user_emb2 = tf.nn.l2_normalize(self.ua_embeddings_sub2, 1)
             pos_score_user = tf.reduce_sum(tf.multiply(normalize_user_emb1, normalize_user_emb2), axis=1)
-            ttl_score_user = tf.matmul(normalize_user_emb1, normalize_all_user_emb2, transpose_a=False, transpose_b=True)
+            ttl_score_user = tf.matmul(normalize_user_emb1, normalize_all_user_emb2, transpose_a=False,
+                                       transpose_b=True)
 
             pos_score_user = tf.exp(pos_score_user / self.ssl_temp)
             ttl_score_user = tf.reduce_sum(tf.exp(ttl_score_user / self.ssl_temp), axis=1)
 
             ssl_loss_user = -tf.reduce_sum(tf.log(pos_score_user / ttl_score_user))
-        
+
+            tf.add_to_collection('ssl_loss_user_base', tf.log(pos_score_user / ttl_score_user))
+            tf.add_to_collection('ssl_loss_user', ssl_loss_user)
+
         if self.ssl_mode in ['item_side', 'both_side']:
             item_emb1 = tf.nn.embedding_lookup(self.ia_embeddings_sub1, self.pos_items)
             item_emb2 = tf.nn.embedding_lookup(self.ia_embeddings_sub2, self.pos_items)
@@ -319,12 +330,15 @@ class SGL(AbstractRecommender):
             normalize_item_emb2 = tf.nn.l2_normalize(item_emb2, 1)
             normalize_all_item_emb2 = tf.nn.l2_normalize(self.ia_embeddings_sub2, 1)
             pos_score_item = tf.reduce_sum(tf.multiply(normalize_item_emb1, normalize_item_emb2), axis=1)
-            ttl_score_item = tf.matmul(normalize_item_emb1, normalize_all_item_emb2, transpose_a=False, transpose_b=True)
-            
+            ttl_score_item = tf.matmul(normalize_item_emb1, normalize_all_item_emb2, transpose_a=False,
+                                       transpose_b=True)
+
             pos_score_item = tf.exp(pos_score_item / self.ssl_temp)
             ttl_score_item = tf.reduce_sum(tf.exp(ttl_score_item / self.ssl_temp), axis=1)
 
             ssl_loss_item = -tf.reduce_sum(tf.log(pos_score_item / ttl_score_item))
+            tf.add_to_collection('ssl_loss_item_base', tf.log(pos_score_item / ttl_score_item))
+            tf.add_to_collection('ssl_loss_item', ssl_loss_item)
 
         if self.ssl_mode == 'user_side':
             ssl_loss = self.ssl_reg * ssl_loss_user
@@ -332,7 +346,7 @@ class SGL(AbstractRecommender):
             ssl_loss = self.ssl_reg * ssl_loss_item
         else:
             ssl_loss = self.ssl_reg * (ssl_loss_user + ssl_loss_item)
-        
+
         return ssl_loss
 
     def calc_ssl_loss_v3(self):
@@ -385,12 +399,12 @@ class SGL(AbstractRecommender):
             tf.reduce_sum(tf.multiply(batch_pos_i_embeddings, batch_pos_i_embeddings), axis=1))
 
         return bpr_loss, emb_loss
-    
+
     def _convert_sp_mat_to_sp_tensor(self, X):
         coo = X.tocoo().astype(np.float32)
         indices = np.mat([coo.row, coo.col]).transpose()
         return tf.SparseTensor(indices, coo.data, coo.shape)
-    
+
     def _convert_csr_to_sparse_tensor_inputs(self, X):
         coo = X.tocoo()
         indices = np.mat([coo.row, coo.col]).transpose()
@@ -407,12 +421,20 @@ class SGL(AbstractRecommender):
             # generate two subgraph and feed into tensorflow graph
             sub_mat = {}
             if self.aug_type in [0, 1]:
-                sub_mat['adj_indices_sub1'], sub_mat['adj_values_sub1'], sub_mat['adj_shape_sub1'] = self._convert_csr_to_sparse_tensor_inputs(self.create_adj_mat(is_subgraph=True, aug_type=self.aug_type))
-                sub_mat['adj_indices_sub2'], sub_mat['adj_values_sub2'], sub_mat['adj_shape_sub2'] = self._convert_csr_to_sparse_tensor_inputs(self.create_adj_mat(is_subgraph=True, aug_type=self.aug_type))
+                sub_mat['adj_indices_sub1'], sub_mat['adj_values_sub1'], sub_mat[
+                    'adj_shape_sub1'] = self._convert_csr_to_sparse_tensor_inputs(
+                    self.create_adj_mat(is_subgraph=True, aug_type=self.aug_type))
+                sub_mat['adj_indices_sub2'], sub_mat['adj_values_sub2'], sub_mat[
+                    'adj_shape_sub2'] = self._convert_csr_to_sparse_tensor_inputs(
+                    self.create_adj_mat(is_subgraph=True, aug_type=self.aug_type))
             else:
                 for k in range(1, self.n_layers + 1):
-                    sub_mat['adj_indices_sub1%d' % k], sub_mat['adj_values_sub1%d' % k], sub_mat['adj_shape_sub1%d' % k] = self._convert_csr_to_sparse_tensor_inputs(self.create_adj_mat(is_subgraph=True, aug_type=self.aug_type))
-                    sub_mat['adj_indices_sub2%d' % k], sub_mat['adj_values_sub2%d' % k], sub_mat['adj_shape_sub2%d' % k] = self._convert_csr_to_sparse_tensor_inputs(self.create_adj_mat(is_subgraph=True, aug_type=self.aug_type))
+                    sub_mat['adj_indices_sub1%d' % k], sub_mat['adj_values_sub1%d' % k], sub_mat[
+                        'adj_shape_sub1%d' % k] = self._convert_csr_to_sparse_tensor_inputs(
+                        self.create_adj_mat(is_subgraph=True, aug_type=self.aug_type))
+                    sub_mat['adj_indices_sub2%d' % k], sub_mat['adj_values_sub2%d' % k], sub_mat[
+                        'adj_shape_sub2%d' % k] = self._convert_csr_to_sparse_tensor_inputs(
+                        self.create_adj_mat(is_subgraph=True, aug_type=self.aug_type))
             total_loss, total_ssl_loss, total_emb_loss = 0.0, 0.0, 0.0
 
             training_start_time = time()
@@ -421,7 +443,7 @@ class SGL(AbstractRecommender):
             for bat_users, bat_pos_items, bat_neg_items in data_iter:
                 feed_dict = {self.users: bat_users,
                              self.pos_items: bat_pos_items,
-                             self.neg_items: bat_neg_items,}
+                             self.neg_items: bat_neg_items, }
                 if self.aug_type in [0, 1]:
                     feed_dict.update({
                         self.sub_mat['adj_values_sub1']: sub_mat['adj_values_sub1'],
@@ -441,8 +463,20 @@ class SGL(AbstractRecommender):
                             self.sub_mat['adj_indices_sub2%d' % k]: sub_mat['adj_indices_sub2%d' % k],
                             self.sub_mat['adj_shape_sub2%d' % k]: sub_mat['adj_shape_sub2%d' % k]
                         })
-                loss, ssl_loss, emb_loss, _ = self.sess.run((self.loss, self.ssl_loss, self.emb_loss, self.opt), 
-                                                            feed_dict=feed_dict)
+                loss, ssl_loss, emb_loss, _, ssl_loss_user_base, ssl_loss_user, ssl_loss_item_base, ssl_loss_item \
+                    = self.sess.run((self.loss, self.ssl_loss, self.emb_loss, self.opt,
+                                     tf.get_collection('ssl_loss_user_base'),
+                                     tf.get_collection('ssl_loss_user'),
+                                     tf.get_collection('ssl_loss_item_base'),
+                                     tf.get_collection('ssl_loss_item'),
+                                     ),
+                                    feed_dict=feed_dict)
+
+                print('ssl_loss_user_base', ssl_loss_user_base)
+                print('ssl_loss_user', ssl_loss_user)
+                print('ssl_loss_item_base', ssl_loss_item_base)
+                print('ssl_loss_item', ssl_loss_item)
+
                 total_loss += loss
                 total_ssl_loss += ssl_loss
                 total_emb_loss += emb_loss
@@ -450,14 +484,14 @@ class SGL(AbstractRecommender):
             if np.isnan(total_loss):
                 self.logger.info("Nan is encountered!")
                 sys.exit(1)
-                
+
             self.logger.info("[iter %d : loss : %.4f = %.4f + %.4f + %.4f, time: %f]" % (
-                epoch, 
-                total_loss/data_iter.num_trainings,
+                epoch,
+                total_loss / data_iter.num_trainings,
                 (total_loss - total_ssl_loss - total_emb_loss) / data_iter.num_trainings,
                 total_ssl_loss / data_iter.num_trainings,
                 total_emb_loss / data_iter.num_trainings,
-                time()-training_start_time))
+                time() - training_start_time))
             if epoch % self.verbose == 0 and epoch > self.conf['start_testing_epoch']:
                 buf, flag = self.evaluate()
                 self.logger.info("epoch %d:\t%s" % (epoch, buf))
