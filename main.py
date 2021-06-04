@@ -18,7 +18,8 @@ if __name__ == "__main__":
     if is_windows:
         root_folder = 'D:/OneDrive - mail.ustc.edu.cn/PythonProjects/SGL/'
     else:
-        root_folder = '/home/wujc/PythonProjects/SGL/'
+#        root_folder = '/home/wujc/PythonProjects/SGL/'
+        root_folder = './'
     conf = Configurator(root_folder + "NeuRec.properties", default_section="hyperparameters")
     seed = conf["seed"]
     print('seed=', seed)

@@ -1,0 +1,8 @@
+data/
+dataset/
+*/__pycache__/*
+*/*/__pycache__/*
+*/cython/*
+evaluator/*
+log/*
+
