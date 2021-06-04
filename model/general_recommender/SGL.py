@@ -466,7 +466,7 @@ class SGL(AbstractRecommender):
                             self.sub_mat['adj_shape_sub2%d' % k]: sub_mat['adj_shape_sub2%d' % k]
                         })
                 loss, ssl_loss, emb_loss, _, ssl_loss_user_base, ssl_loss_user, ssl_loss_item_base, ssl_loss_item, \
-                        ssl_loss = self.sess.run((self.loss, self.ssl_loss, self.emb_loss, self.opt,
+                        ssl_loss_raw = self.sess.run((self.loss, self.ssl_loss, self.emb_loss, self.opt,
                                                            tf.get_collection('ssl_loss_user_base'),
                                                            tf.get_collection('ssl_loss_user'),
                                                            tf.get_collection('ssl_loss_item_base'),
@@ -480,7 +480,7 @@ class SGL(AbstractRecommender):
                 print('ssl_loss_item_base', ssl_loss_item_base)
                 print('ssl_loss_item', ssl_loss_item)
                 print('ssl_reg', self.ssl_reg)
-                print('ssl_loss', ssl_loss)
+                print('ssl_loss_raw', ssl_loss_raw)
 
                 total_loss += loss
                 total_ssl_loss += ssl_loss
