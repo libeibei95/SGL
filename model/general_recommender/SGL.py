@@ -347,6 +347,8 @@ class SGL(AbstractRecommender):
         else:
             ssl_loss = self.ssl_reg * (ssl_loss_user + ssl_loss_item)
 
+        tf.add_to_collection('ssl_reg', self.ssl_reg)
+        tf.add_to_collection('ssl_loss', ssl_loss)
         return ssl_loss
 
     def calc_ssl_loss_v3(self):
@@ -464,11 +466,13 @@ class SGL(AbstractRecommender):
                             self.sub_mat['adj_shape_sub2%d' % k]: sub_mat['adj_shape_sub2%d' % k]
                         })
                 loss, ssl_loss, emb_loss, _, ssl_loss_user_base, ssl_loss_user, ssl_loss_item_base, ssl_loss_item \
-                    = self.sess.run((self.loss, self.ssl_loss, self.emb_loss, self.opt,
+                    ssl_reg, ssl_loss= self.sess.run((self.loss, self.ssl_loss, self.emb_loss, self.opt,
                                      tf.get_collection('ssl_loss_user_base'),
                                      tf.get_collection('ssl_loss_user'),
                                      tf.get_collection('ssl_loss_item_base'),
                                      tf.get_collection('ssl_loss_item'),
+                                     tf.get_collection('ssl_reg'),
+                                     tf.get_collection('ssl_loss'),
                                      ),
                                     feed_dict=feed_dict)
 
@@ -476,6 +480,8 @@ class SGL(AbstractRecommender):
                 print('ssl_loss_user', ssl_loss_user)
                 print('ssl_loss_item_base', ssl_loss_item_base)
                 print('ssl_loss_item', ssl_loss_item)
+                print('ssl_reg', ssl_reg)
+                print('ssl_loss', ssl_loss)
 
                 total_loss += loss
                 total_ssl_loss += ssl_loss
